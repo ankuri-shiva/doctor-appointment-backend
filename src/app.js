@@ -2,12 +2,59 @@ const express = require('express');
 const connectDB = require('./config/database');
 const Doctor = require("./models/doctors.js");
 const Appointments = require("./models/appointments.js");
+const User = require("./models/user.js");
 const app = express();
 app.use(express.json());
+
+const cors = require("cors");
+
+app.use(cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+}));
+
 const port = 7000;
 
-app.get("/", (req, res) => {
-    res.send('Hello World');
+
+// signup user
+app.post("/signup", async(req, res) => {
+    try {
+        const {userName, email, password} = req.body;
+ 
+           //creating the new instance of the user model
+           const user =  new User({
+            userName, email, password
+           });
+
+           // adding new user to the database
+            const savedUser = await user.save();
+            res.json({message : "user added successfully", data : savedUser});
+    } catch(err) {
+        res.status(400).send("Error " + err.message);
+    }
+ });
+
+ //login 
+
+ app.post("/login", async (req, res) => {
+    try {
+        const {email, password} = req.body;
+    
+        const user = await User.findOne({ email: email });        
+        if(!user) {
+            throw new Error("Invalid credintials");
+        };
+
+        if(user.password === password){
+            res.json({message:"Login in successfully", data: user});
+        }else{
+            throw new Error("Invalid Credintials");
+        };
+        
+    }catch(err) {
+        res.status(400).send("Error " + err.message);
+    }
+    
 });
 
 //add doctor to database
@@ -179,7 +226,7 @@ app.delete("/appointments/:_id", async(req, res) => {
 app.put("/appointments/:_id", async(req, res) => {
     try{
         const appointmentId = req.params._id;
-        const {doctorId, appointmentType, patientName} = req.body;
+        const {doctorId, appointmentType, patientName, date} = req.body;
         const appointment = await Appointments.findById(appointmentId);
         if(doctorId) {
             appointment.doctorId = doctorId;
@@ -189,6 +236,9 @@ app.put("/appointments/:_id", async(req, res) => {
         }
         if(patientName) {
             appointment.patientName = patientName;
+        }
+        if(date){
+            appointment.date = date;
         }
         await appointment.save();
         res.json({message: "Appointment updated successfully"});
