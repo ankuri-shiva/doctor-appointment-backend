@@ -57,6 +57,7 @@ app.post("/signup", async(req, res) => {
     
 });
 
+
 //add doctor to database
 app.post("/doctor", async(req, res) => {
     try{
